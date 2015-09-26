@@ -10,6 +10,7 @@
 #define MAX_LINE 400
 #define MAX_CMDS 10
 #define MAX_HISTORY 20
+#define MAX_DIR 20
 
 int Argc;
 char *Argv[MAX_Argc];//Argv to be exe
@@ -20,6 +21,7 @@ char CMDS[MAX_CMDS][MAX_LINE];//store commands
 int CMDN;
 char History[MAX_HISTORY][MAX_LINE];
 int History_Num=0;
+char DIRS[MAX_DIR][MAX_LINE];
 
 void put_Argv(char *str){//split a line of command into argv
     char *point;
@@ -117,7 +119,7 @@ int run_Lines(){//exe
             if(Argc>=2)
                 chdir(Argv[1]);
             else
-                chdir("/");
+                chdir(DIRS[0]);
         }
         else if(!strcmp(Argv[0],"history")){
             for(i=History_Num - MAX_HISTORY;i<History_Num;++i){
@@ -160,6 +162,7 @@ int run_Lines(){//exe
 
 
 int main(int argc,char *argv[]){
+    getcwd(DIRS[0],MAX_LINE);
     while(1){
         print_Hellow();
         get_Line();

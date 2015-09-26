@@ -9,7 +9,7 @@
 #define MAX_Argv 100
 #define MAX_LINE 400
 #define MAX_CMDS 10
-#define MAX_HISTORY 12
+#define MAX_HISTORY 20
 
 int Argc;
 char *Argv[MAX_Argc];//Argv to be exe
@@ -19,7 +19,7 @@ char Line[MAX_LINE];//store a new line
 char CMDS[MAX_CMDS][MAX_LINE];//store commands
 int CMDN;
 char History[MAX_HISTORY][MAX_LINE];
-int History_Num;
+int History_Num=0;
 
 void put_Argv(char *str){//split a line of command into argv
     char *point;
@@ -60,7 +60,7 @@ void put_Argv(char *str){//split a line of command into argv
 
 
 void print_Hellow(){//done
-    printf("qsh>>");
+    printf("qsh[%d]>>",History_Num);
 }
 
 void split_Line(){//split a line into commands
@@ -83,9 +83,20 @@ void split_Line(){//split a line into commands
 }
 
 void get_Line(){//read a line
-    int begin,end;
-    begin = 0;
+    int num;
     fgets(Line,MAX_LINE,stdin);
+    if(Line[0]=='!' && Line[1]=='!')
+        strcpy(Line,History[(History_Num-1)%MAX_HISTORY]);
+    else if(Line[0]=='!'){
+        sscanf(&Line[1],"%d",&num);
+        if(History_Num - num > MAX_HISTORY || num>History_Num){
+            printf("This commands doesn't exist.\n");
+            Line[0]='\0';
+            return ;
+        }else{
+            strcpy(Line,History[num%MAX_HISTORY]);
+        }
+    }
     strcpy(History[(History_Num++)%MAX_HISTORY],Line);
     split_Line();// split line into commands
 }

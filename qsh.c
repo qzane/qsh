@@ -19,9 +19,9 @@ char CMD_OPT[4][MAX_Argv];//|stdin|stdout|stderr|foreground/background|...
 char Line[MAX_LINE];//store a new line
 char CMDS[MAX_CMDS][MAX_LINE];//store commands
 int CMDN;
-char History[MAX_HISTORY][MAX_LINE];
+char History[MAX_HISTORY][MAX_LINE];//store history
 int History_Num=0;
-char DIRS[MAX_DIR][MAX_LINE];
+char DIRS[MAX_DIR][MAX_LINE];//store dirs
 
 void put_Argv(char *str){//split a line of command into argv
     char *point;
@@ -56,7 +56,10 @@ void put_Argv(char *str){//split a line of command into argv
             Argvv[i][0]='\0';
         }
     }
-    Argv[Argc]=NULL;//del the last argv (; or &)
+    for(i=j=0;i<Argc;++i)
+        if(Argvv[i][0]!='\0')
+            strcpy(Argvv[j++],Argvv[i]);
+    Argv[Argc=j]=NULL;//del the last argv (; or &)
     
 }
 
@@ -133,15 +136,16 @@ int run_Lines(){//exe
                 for(fno=1;fno<3;++fno){
                     if(CMD_OPT[fno][0]=='>'){
                         if(CMD_OPT[fno][1]=='>'){//">>" means append
-                            ftmp = open(&CMD_OPT[fno][2],O_CREAT|O_RDWR,S_IRUSR | S_IWUSR);
+                            ftmp = open(&CMD_OPT[fno][2],O_CREAT|O_RDWR|O_FSYNC,S_IRUSR | S_IWUSR);
                             lseek(ftmp,0,SEEK_END);
                             dup2(ftmp,fno);
                         }else{
-                            ftmp = open(&CMD_OPT[fno][1],O_CREAT|O_TRUNC|O_RDWR,S_IRUSR | S_IWUSR);
+                            ftmp = open(&CMD_OPT[fno][1],O_CREAT|O_TRUNC|O_RDWR|O_FSYNC,S_IRUSR | S_IWUSR);
                             dup2(ftmp,fno);
                         }
                     }
                 }
+                
                 if(CMD_OPT[0][0]=='<'){
                     ftmp = open(&CMD_OPT[0][1],O_RDONLY);
                     dup2(ftmp,0);

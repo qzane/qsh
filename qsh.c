@@ -13,7 +13,11 @@
 #define MAX_HISTORY 20
 #define MAX_DIR 20
 
-int Argc,Argcn;
+pip_t Postpid;
+char INPUT_PIPE[MAX_Argv];
+char OUTPUT_PIPE[MAX_Argv];
+int Argc,Argcn;//Argcn:管道把命令切成了多少段
+int Argvn[MAX_Argcn];
 char *Argv[MAX_Argcn][MAX_Argc];//Argv to be exe
 char Argvv[MAX_Argc][MAX_Argv];//place to store argv
 char CMD_OPT[MAX_Argcn][4][MAX_Argv];//|stdin|stdout|stderr|foreground/background|...
@@ -38,35 +42,49 @@ void put_Argv(char *str){//split a line of command into argv
     for(j=0;j<MAX_Argcn;++j)
         for(i=0;i<4;++i)
             CMD_OPT[j][i][0]='\0';
-            
+    Argvn[0]=0;
     for(i=0;i<Argc;++i){
         if(Argvv[i][0]==';'){
-            ;
+            CMD_OPT[Argcn][3][0]=';';
+            Argv[Argcn][Argvn[Argcn]]=NULL;
         }
         else if(Argvv[i][0]=='&'){
-            ;
+            CMD_OPT[Argcn][3][0]='&';
+            Argv[Argcn][Argvn[Argcn]]=NULL;
         }
         else if(Argvv[i][0]=='<'){
-            ;
+            strcpy(CMD_OPT[Argcn][0],Argvv[i]);
         }
         else if(Argvv[i][0]=='>'){
-            ;
+            strcpy(CMD_OPT[Argcn][1],Argvv[i]);
         }
         else if(Argvv[i][0]=='1' && Argvv[i][1]=='>'){
-            ;
+            strcpy(CMD_OPT[Argcn][1],&Argvv[i][1]);
         }
         else if(Argvv[i][0]=='2' && Argvv[i][1]=='>'){
-            ;
+            strcpy(CMD_OPT[Argcn][2],&Argvv[i][1]);
         }
         else if(Argvv[i][0]=='|'){
-            ;
+            CMD_OPT[Argcn][3][0]=';';
+            Argv[Argcn][Argvn[Argcn]]=NULL;
+            ++Argcn;
         }
         else{
-            ;
+            Argv[Argcn][Argvn[Argcn]++]=Argvv[i];
         }
     
     }
+    ///*/test:
+    for(i=0;i<Argcn;++i)
+        for(j=0;;++j){
+            if(Argv[i][j]==NULL){
+                printf("\n");
+                break;
+            }
+            printf("#%s%, ",Argv[i][j]);            
+        }
     
+    /*
     if(Argvv[Argc][0]==';')
         CMD_OPT[3][0]=';';
     else
@@ -90,11 +108,12 @@ void put_Argv(char *str){//split a line of command into argv
             Argvv[i][0]='\0';
         }
     }
+    
     for(i=j=0;i<Argc;++i)
         if(Argvv[i][0]!='\0' && Argvv[i][0]!=';' && Argvv[i][0] !='&')
             strcpy(Argvv[j++],Argvv[i]);
     Argv[Argc=j]=NULL;//del the last argv (; or &)
-    
+    ///*/
 }
 
 
@@ -140,58 +159,69 @@ void get_Line(){//read a line
     split_Line();// split line into commands
 }
 int run_Lines(){//exe
-    int no,fno,ftmp,i;
+    int no,fno,ftmp,i,pipen;
     pid_t pid;
     for(no=0;no<CMDN;++no){
         put_Argv(CMDS[no]);
-
-        if(Argc==0){
-            ;
-        }
-        else if(!strcmp(Argv[0],"exit")){
-           printf("bye!\n");
-           return 1;
-        }
-        else if(!strcmp(Argv[0],"cd")){
-            if(Argc>=2)
-                chdir(Argv[1]);
-            else
-                chdir(DIRS[0]);
-        }
-        else if(!strcmp(Argv[0],"history")){
-            for(i=History_Num - MAX_HISTORY;i<History_Num;++i){
-                if(i<0)continue;
-                printf("History.%-2d:%s",i,History[i%MAX_HISTORY]);
+        for(pipen=0;pipen<Argcn;++pipen){        
+            if(Argc==0){
+                ;
             }
-        }
-        else{
-            pid = fork();
-	        if(pid==0){
-                for(fno=1;fno<3;++fno){
-                    if(CMD_OPT[fno][0]=='>'){
-                        if(CMD_OPT[fno][1]=='>'){//">>" means append
-                            ftmp = open(&CMD_OPT[fno][2],O_CREAT|O_RDWR|O_FSYNC,S_IRUSR | S_IWUSR);
-                            lseek(ftmp,0,SEEK_END);
-                            dup2(ftmp,fno);
-                        }else{
-                            ftmp = open(&CMD_OPT[fno][1],O_CREAT|O_TRUNC|O_RDWR|O_FSYNC,S_IRUSR | S_IWUSR);
-                            dup2(ftmp,fno);
+            else if(!strcmp(Argv[0],"exit")){
+               printf("bye!\n");
+               return 1;
+            }
+            else if(!strcmp(Argv[0],"cd")){
+                if(Argc>=2)
+                    chdir(Argv[1]);
+                else
+                    chdir(DIRS[0]);
+            }
+            else if(!strcmp(Argv[0],"history")){
+                for(i=History_Num - MAX_HISTORY;i<History_Num;++i){
+                    if(i<0)continue;
+                    printf("History.%-2d:%s",i,History[i%MAX_HISTORY]);
+                }
+            }
+            else{
+                pid = fork();
+                if(pid==0){
+                    for(fno=1;fno<3;++fno){
+                        if(CMD_OPT[fno][0]=='>'){
+                            if(CMD_OPT[fno][1]=='>'){//">>" means append
+                                ftmp = open(&CMD_OPT[fno][2],O_CREAT|O_RDWR|O_FSYNC,S_IRUSR | S_IWUSR);
+                                lseek(ftmp,0,SEEK_END);
+                                dup2(ftmp,fno);
+                            }else{
+                                ftmp = open(&CMD_OPT[fno][1],O_CREAT|O_TRUNC|O_RDWR|O_FSYNC,S_IRUSR | S_IWUSR);
+                                dup2(ftmp,fno);
+                            }
                         }
                     }
+                    if(CMD_OPT[0][0]=='<'){
+                        ftmp = open(&CMD_OPT[0][1],O_RDONLY);
+                        dup2(ftmp,0);
+                    }
+                    if(pipen!=Argcn-1){
+                        sprintf(OUTPUT_PIPE,"qsh-%d.pipe",getpid());
+                        ftmp = open(OUTPUT_PIPE,O_CREAT|O_TRUNC|O_RDWR|O_FSYNC,S_IRUSR | S_IWUSR);
+                        dup2(ftmp,1);
+                    }
+                    if(pipen!=0){
+                        sprintf(INPUT_PIPE,"qsh-%d.pipe",Postpid);
+                        ftmp = open(INPUT_PIPE,O_RDONLY);
+                        dup2(ftmp,0);                      
+                    }
+                    execvp(Argv[0],Argv);
+                    fflush(stdout);
+                    exit(0);
+                }else{
+                    Postpid = pid;
+                    if(CMD_OPT[3][0]!='&'){
+                        waitpid(pid,NULL,0);
+                    }
+                    fflush(stdout);
                 }
-                
-                if(CMD_OPT[0][0]=='<'){
-                    ftmp = open(&CMD_OPT[0][1],O_RDONLY);
-                    dup2(ftmp,0);
-                }
-                execvp(Argv[0],Argv);
-                fflush(stdout);
-                exit(0);
-            }else{
-	            if(CMD_OPT[3][0]!='&'){
-                    waitpid(pid,NULL,0);
-                }
-                fflush(stdout);
             }
         }
     }

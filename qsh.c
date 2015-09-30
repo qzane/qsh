@@ -164,20 +164,20 @@ int run_Lines(){//exe
     for(no=0;no<CMDN;++no){
         put_Argv(CMDS[no]);
         for(pipen=0;pipen<Argcn;++pipen){        
-            if(Argc==0){
+            if(Argv[pipen][0]]==NULL){
                 ;
             }
-            else if(!strcmp(Argv[0],"exit")){
+            else if(!strcmp(Argv[pipen][0],"exit")){
                printf("bye!\n");
                return 1;
             }
-            else if(!strcmp(Argv[0],"cd")){
-                if(Argc>=2)
-                    chdir(Argv[1]);
+            else if(!strcmp(Argv[pipen][0],"cd")){
+                if(Argvn[pipen]>=2)
+                    chdir(Argv[pipen][1]);
                 else
                     chdir(DIRS[0]);
             }
-            else if(!strcmp(Argv[0],"history")){
+            else if(!strcmp(Argv[pipen][0],"history")){
                 for(i=History_Num - MAX_HISTORY;i<History_Num;++i){
                     if(i<0)continue;
                     printf("History.%-2d:%s",i,History[i%MAX_HISTORY]);
@@ -187,13 +187,13 @@ int run_Lines(){//exe
                 pid = fork();
                 if(pid==0){
                     for(fno=1;fno<3;++fno){
-                        if(CMD_OPT[fno][0]=='>'){
-                            if(CMD_OPT[fno][1]=='>'){//">>" means append
-                                ftmp = open(&CMD_OPT[fno][2],O_CREAT|O_RDWR|O_FSYNC,S_IRUSR | S_IWUSR);
+                        if(CMD_OPT[pipen][fno][0]=='>'){
+                            if(CMD_OPT[pipen][fno][1]=='>'){//">>" means append
+                                ftmp = open(&CMD_OPT[pipen][fno][2],O_CREAT|O_RDWR|O_FSYNC,S_IRUSR | S_IWUSR);
                                 lseek(ftmp,0,SEEK_END);
                                 dup2(ftmp,fno);
                             }else{
-                                ftmp = open(&CMD_OPT[fno][1],O_CREAT|O_TRUNC|O_RDWR|O_FSYNC,S_IRUSR | S_IWUSR);
+                                ftmp = open(&CMD_OPT[pipen][fno][1],O_CREAT|O_TRUNC|O_RDWR|O_FSYNC,S_IRUSR | S_IWUSR);
                                 dup2(ftmp,fno);
                             }
                         }
@@ -212,12 +212,12 @@ int run_Lines(){//exe
                         ftmp = open(INPUT_PIPE,O_RDONLY);
                         dup2(ftmp,0);                      
                     }
-                    execvp(Argv[0],Argv);
+                    execvp(Argv[pipen][0],Argv);
                     fflush(stdout);
                     exit(0);
                 }else{
                     Postpid = pid;
-                    if(CMD_OPT[3][0]!='&'){
+                    if(CMD_OPT[pipen][3][0]!='&'){
                         waitpid(pid,NULL,0);
                     }
                     fflush(stdout);

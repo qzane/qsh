@@ -5,6 +5,7 @@
 #include<fcntl.h>
 #include<sys/wait.h>
 
+#define MAX_Argcn 10
 #define MAX_Argc 20
 #define MAX_Argv 100
 #define MAX_LINE 400
@@ -12,10 +13,10 @@
 #define MAX_HISTORY 20
 #define MAX_DIR 20
 
-int Argc;
-char *Argv[MAX_Argc];//Argv to be exe
+int Argc,Argcn;
+char *Argv[MAX_Argcn][MAX_Argc];//Argv to be exe
 char Argvv[MAX_Argc][MAX_Argv];//place to store argv
-char CMD_OPT[4][MAX_Argv];//|stdin|stdout|stderr|foreground/background|...
+char CMD_OPT[MAX_Argcn][4][MAX_Argv];//|stdin|stdout|stderr|foreground/background|...
 char Line[MAX_LINE];//store a new line
 char CMDS[MAX_CMDS][MAX_LINE];//store commands
 int CMDN;
@@ -26,23 +27,56 @@ char DIRS[MAX_DIR][MAX_LINE];//store dirs
 void put_Argv(char *str){//split a line of command into argv
     char *point;
     int i,j;
-    Argc = 0;
+    Argc = Argcn = 0;
     point = strtok(str," \n\r");
     while(point!=NULL){
         strcpy(Argvv[Argc],point);
         point = strtok(NULL," \n\r");
-        Argv[Argc]=Argvv[Argc];
         ++Argc;
     }
     --Argc;
-    for(i=0;i<4;++i)
-        CMD_OPT[i][0]='\0';
+    for(j=0;j<MAX_Argcn;++j)
+        for(i=0;i<4;++i)
+            CMD_OPT[j][i][0]='\0';
+            
+    for(i=0;i<Argc;++i){
+        if(Argvv[i][0]==';'){
+            ;
+        }
+        else if(Argvv[i][0]=='&'){
+            ;
+        }
+        else if(Argvv[i][0]=='<'){
+            ;
+        }
+        else if(Argvv[i][0]=='>'){
+            ;
+        }
+        else if(Argvv[i][0]=='1' && Argvv[i][1]=='>'){
+            ;
+        }
+        else if(Argvv[i][0]=='2' && Argvv[i][1]=='>'){
+            ;
+        }
+        else if(Argvv[i][0]=='|'){
+            ;
+        }
+        else{
+            ;
+        }
+    
+    }
+    
     if(Argvv[Argc][0]==';')
         CMD_OPT[3][0]=';';
     else
         CMD_OPT[3][0]='&';
     for(i=0;i<Argc;++i){
-        if(Argvv[i][0]=='<'){
+        if(Argvv[i][0]=='|'){
+            //what to put here?
+        
+        }
+        else if(Argvv[i][0]=='<'){
             strcpy(CMD_OPT[0],Argvv[i]);
             Argvv[i][0]='\0';
         }else if(Argvv[i][0]=='>'){
@@ -57,7 +91,7 @@ void put_Argv(char *str){//split a line of command into argv
         }
     }
     for(i=j=0;i<Argc;++i)
-        if(Argvv[i][0]!='\0')
+        if(Argvv[i][0]!='\0' && Argvv[i][0]!=';' && Argvv[i][0] !='&')
             strcpy(Argvv[j++],Argvv[i]);
     Argv[Argc=j]=NULL;//del the last argv (; or &)
     
